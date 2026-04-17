@@ -561,13 +561,14 @@ function enterApp(){
   var btn=document.getElementById('n-'+lastPage)||document.getElementById('n-mis');
   gotoPage(lastPage,btn);
   loadMembers();
+  // mis 먼저 빠르게 표시 → clients는 백그라운드 로딩 후 매칭
   load('데이터 불러오는 중...');
-  Promise.all([loadClients(), loadMis()]).then(function(){
-    matchCl();
-    updateKPI();
-    updateMgrF();
-    renderMis();
-    hide();
+  loadMis().then(function(){
+    updateKPI();updateMgrF();renderMis();hide();
+    // clients는 백그라운드에서 로딩 (화면은 이미 떠있음)
+    loadClients().then(function(){
+      matchCl();updateKPI();renderMis();
+    });
   }).catch(function(){hide();});
 }
 
@@ -599,8 +600,9 @@ function gotoPage(pg,btn){
 // 미수금
 function reloadAll(){
   load('새로고침 중...');
-  Promise.all([loadClients(), loadMis()]).then(function(){
-    matchCl();updateKPI();updateMgrF();renderMis();hide();
+  loadMis().then(function(){
+    updateKPI();updateMgrF();renderMis();hide();
+    loadClients().then(function(){matchCl();updateKPI();renderMis();});
   }).catch(function(){hide();});
 }
 function loadMis(){
@@ -994,6 +996,8 @@ function renderMembers(){
     '회계팀':'background:#f3e8ff;color:#581c87;'
   };
   var sorted=members.slice().sort(function(a,b){
+    if(a.name==='서혁진') return -1;
+    if(b.name==='서혁진') return 1;
     var da=deptOrder[a.department]!==undefined?deptOrder[a.department]:99;
     var db=deptOrder[b.department]!==undefined?deptOrder[b.department]:99;
     if(da!==db)return da-db;
