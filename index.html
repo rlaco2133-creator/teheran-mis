@@ -268,7 +268,7 @@ input[type=file]{display:none;}
           <button class="btn pri" onclick="reloadAll()">🔄 새로고침</button>
         </div>
       </div>
-      <div class="kgrid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));">
+      <div class="kgrid" id="kpi-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));">
         <div class="kcard"><div class="klbl">총 미수금</div><div class="kval red" id="k-tot">-</div><div class="ksub" id="k-cnt">-건</div></div>
         <div class="kcard"><div class="klbl">미처리</div><div class="kval gry" id="k-up">-</div><div class="ksub">건</div></div>
         <div class="kcard"><div class="klbl">안내완료</div><div class="kval ora" id="k-no">-</div><div class="ksub">건</div></div>
@@ -556,7 +556,8 @@ function enterApp(){
       document.getElementById('n-settings').style.display='';
     }
   }
-  // 사용자: 미수금현황 + 거래처관리만 (추가 메뉴 없음)
+  // 사용자: KPI 숨기기
+  document.getElementById('kpi-grid').style.display = cu.role==='admin' ? '' : 'none';
   var lastPage=sessionStorage.getItem('lastPage')||'mis';
   var btn=document.getElementById('n-'+lastPage)||document.getElementById('n-mis');
   gotoPage(lastPage,btn);
