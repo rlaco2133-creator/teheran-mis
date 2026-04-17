@@ -906,11 +906,15 @@ function handleExcel(e){
       }
       if(!ndata.length){alert('데이터를 읽지 못했어요.');return;}
       if(!confirm(ndata.length+'건 불러왔어요. 기존 데이터가 초기화됩니다. 진행할까요?'))return;
-      load(ndata.length+'건 저장 중...');
+      load('저장 중...');
+      // DELETE 후 bulk insert (API 2번으로 끝)
       sb('mis','DELETE',null,'?id=gt.0').then(function(){
-        var proms=ndata.map(function(r){return sb('mis','POST',r);});
-        return Promise.all(proms);
-      }).then(function(){loadMis();}).catch(function(err){alert('오류: '+err.message);hide();});
+        return sb('mis','POST',ndata); // 배열로 한번에 전송
+      }).then(function(){
+        return Promise.all([loadClients(), loadMis()]);
+      }).then(function(){
+        matchCl();updateKPI();updateMgrF();renderMis();hide();
+      }).catch(function(err){alert('오류: '+err.message);hide();});
     }catch(err){alert('오류: '+err.message);}
   };
   reader.readAsBinaryString(file);e.target.value='';
