@@ -335,11 +335,48 @@ input[type=file]{display:none;}
 
     <!-- 구성원 -->
     <div class="page" id="page-members">
-      <div class="ph" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;">
-        <div><div class="ptitle">구성원 관리</div><div class="psub">이름 / 소속 / 직급 / 권한</div></div>
-        <button class="btn pri" onclick="openAddMember()">+ 구성원 추가</button>
+      <div class="ph">
+        <div class="ptitle">구성원 관리</div>
+        <div class="psub">이름 / 직급 / 소속 / 권한</div>
       </div>
-      <div id="mb-wrap"><div class="empty">구성원 데이터를 불러오는 중...</div></div>
+      <div class="tcard">
+        <div class="tscroll">
+          <table id="mb-table">
+            <thead><tr>
+              <th>이름</th>
+              <th>직급</th>
+              <th>소속</th>
+              <th>권한</th>
+              <th style="width:120px;"></th>
+            </tr></thead>
+            <tbody id="mb-body"></tbody>
+            <tfoot>
+              <tr style="background:var(--gray);border-top:0.5px solid var(--border);">
+                <td style="padding:8px 10px;"><input id="mb-name" class="minp" placeholder="이름" style="width:100%;"/></td>
+                <td style="padding:8px 10px;"><input id="mb-pos" class="minp" placeholder="직급 (예: 대리, 과장)" style="width:100%;"/></td>
+                <td style="padding:8px 10px;">
+                  <select id="mb-dept" class="minp" style="width:100%;">
+                    <option value="">소속 선택</option>
+                    <option>본부</option>
+                    <option>1팀</option>
+                    <option>2팀</option>
+                    <option>3팀</option>
+                  </select>
+                </td>
+                <td style="padding:8px 10px;">
+                  <select id="mb-role" class="minp" style="width:100%;">
+                    <option value="user">사용자</option>
+                    <option value="admin">관리자</option>
+                  </select>
+                </td>
+                <td style="padding:8px 10px;">
+                  <button class="btn pri" style="width:100%;" onclick="doAddMb()">+ 추가</button>
+                </td>
+              </tr>
+            </tfoot>
+          </table>
+        </div>
+      </div>
     </div>
 
     <!-- 설정 -->
@@ -840,11 +877,20 @@ function loadMembers(){
   return sb('members','GET',null,'?order=name').then(function(rows){members=rows;renderMembers();}).catch(function(e){console.error(e);});
 }
 function renderMembers(){
-  var wrap=document.getElementById('mb-wrap');if(!wrap)return;
-  if(!members.length){wrap.innerHTML='<div class="empty">구성원이 없어요. 추가해주세요!</div>';return;}
-  wrap.innerHTML='<div class="mgrid">'+members.map(function(m,i){
-    return '<div class="mcard"><div class="mav">'+ini(m.name)+'</div><div style="flex:1;"><div class="mname">'+m.name+'</div><div class="minfo">'+(m.department||'-')+' · '+(m.position||'-')+'</div><div style="margin-top:4px;"><span class="bdg '+(m.role==='admin'?'adm':'usr')+'">'+(m.role==='admin'?'관리자':'사용자')+'</span></div></div><div class="macts"><button class="btn" style="font-size:11px;padding:3px 8px;" onclick="openEditMb('+i+')">수정</button><button class="btn dan" style="font-size:11px;padding:3px 8px;" onclick="doDelMb('+i+')">삭제</button></div></div>';
-  }).join('')+'</div>';
+  var tbody=document.getElementById('mb-body');if(!tbody)return;
+  if(!members.length){tbody.innerHTML='<tr><td colspan="5"><div class="empty">구성원이 없어요. 아래에서 추가해주세요!</div></td></tr>';return;}
+  tbody.innerHTML=members.map(function(m,i){
+    return '<tr>'
+      +'<td style="font-weight:500;">'+m.name+'</td>'
+      +'<td class="mc">'+(m.position||'-')+'</td>'
+      +'<td><span class="bdg '+(m.department==='회계팀'?'no':'usr')+'">'+( m.department||'-')+'</span></td>'
+      +'<td><span class="bdg '+(m.role==='admin'?'adm':'usr')+'">'+(m.role==='admin'?'관리자':'사용자')+'</span></td>'
+      +'<td style="display:flex;gap:6px;padding:8px 14px;">'
+        +'<button class="btn" style="font-size:11px;padding:3px 8px;" onclick="openEditMb('+i+')">수정</button>'
+        +'<button class="btn dan" style="font-size:11px;padding:3px 8px;" onclick="doDelMb('+i+')">삭제</button>'
+      +'</td>'
+    +'</tr>';
+  }).join('');
 }
 function openAddMember(){
   openMod('<div class="mtitle">구성원 추가</div>'
@@ -856,16 +902,20 @@ function openAddMember(){
   setTimeout(function(){document.getElementById('m-name').focus();},80);
 }
 function doAddMb(){
-  var name=document.getElementById('m-name').value.trim();
+  var name=document.getElementById('mb-name').value.trim();
   if(!name){alert('이름을 입력해주세요.');return;}
   load('추가 중...');
-  sb('members','POST',{name:name,department:document.getElementById('m-dept').value.trim(),position:document.getElementById('m-pos').value.trim(),role:document.getElementById('m-role').value}).then(function(){loadMembers();closeModal();}).catch(function(e){alert('추가 실패: '+e.message);hide();});
+  sb('members','POST',{name:name,department:document.getElementById('mb-dept').value.trim(),position:document.getElementById('mb-pos').value.trim(),role:document.getElementById('mb-role').value}).then(function(){
+    document.getElementById('mb-name').value='';
+    document.getElementById('mb-pos').value='';
+    loadMembers();
+  }).catch(function(e){alert('추가 실패: '+e.message);hide();});
 }
 function openEditMb(idx){
   var m=members[idx];
   openMod('<div class="mtitle">구성원 수정</div>'
     +'<div class="field"><label>이름</label><input id="m-name" value="'+(m.name||'')+'"/></div>'
-    +'<div class="row2"><div class="field"><label>소속</label><input id="m-dept" value="'+(m.department||'')+'"/></div>'
+    +'<div class="row2"><div class="field"><label>소속</label><select id="m-dept"><option value="">소속 선택</option><option'+(m.department==='본부'?' selected':'')+'>본부</option><option'+(m.department==='1팀'?' selected':'')+'>1팀</option><option'+(m.department==='2팀'?' selected':'')+'>2팀</option><option'+(m.department==='3팀'?' selected':'')+'>3팀</option></select></div>'
     +'<div class="field"><label>직급</label><input id="m-pos" value="'+(m.position||'')+'"/></div></div>'
     +'<div class="field"><label>권한</label><select id="m-role"><option value="user"'+(m.role==='user'?' selected':'')+'>사용자</option><option value="admin"'+(m.role==='admin'?' selected':'')+'>관리자</option></select></div>'
     +'<div class="mbtns"><button class="btn" onclick="closeModal()">취소</button><button class="btn pri" onclick="doEditMb('+idx+')">저장</button></div>');
