@@ -278,6 +278,10 @@ input[type=file]{display:none;}
         <div class="bantxt">⚠ <strong id="um-cnt">0</strong>건의 거래처가 매칭되지 않았어요!</div>
         <button class="btn war" onclick="openUnmatch()">매칭 확인</button>
       </div>
+      <div class="banner" id="nomgr-banner" style="display:none;background:var(--purple-bg);border:0.5px solid var(--purple-bd);">
+        <div class="bantxt" style="color:var(--purple);">👤 담당자 미배정 <strong id="nomgr-cnt">0</strong>건이 있어요!</div>
+        <button class="btn" style="background:var(--purple-bg);color:var(--purple);border-color:var(--purple-bd);" onclick="filterNoMgr()">확인하기</button>
+      </div>
       <div class="tbar">
         <div class="sbox"><span class="sico">🔍</span><input type="text" id="mis-q" placeholder="거래처명, 담당자 검색..." oninput="renderMis()"/></div>
         <div class="ftabs">
@@ -287,7 +291,7 @@ input[type=file]{display:none;}
           <button class="ftab" onclick="setMisTab('partial',this)">일부입금</button>
           <button class="ftab" onclick="setMisTab('paid',this)">입금완료</button>
         </div>
-        <select class="fsel" id="mis-mgrf" onchange="renderMis()"><option value="">담당자 전체</option></select>
+        <select class="fsel" id="mis-mgrf" onchange="renderMis()"><option value="">담당자 전체</option><option value="__none__">담당자 미배정</option></select>
         <select class="fsel" id="mis-catf" onchange="renderMis()">
           <option value="">구분 전체</option>
           <option>기장료</option><option>기장료 선납</option><option>아웃소싱</option><option>법인세</option><option>종합소득세</option>
@@ -653,8 +657,13 @@ function updateKPI(){
 function updateMgrF(){
   var mgrs=[...new Set(misData.map(function(r){return r.manager;}).filter(Boolean))].sort();
   var sel=document.getElementById('mis-mgrf'),cur=sel.value;
-  sel.innerHTML='<option value="">담당자 전체</option>'+mgrs.map(function(m){return '<option'+(m===cur?' selected':'')+'>'+m+'</option>';}).join('');
-}
+  sel.innerHTML='<option value="">담당자 전체</option><option value="__none__"'+(cur==='__none__'?' selected':'')+'>담당자 미배정</option>'+mgrs.map(function(m){return '<option'+(m===cur?' selected':'')+'>'+m+'</option>';}).join('');
+  // 담당자 미배정 배너 (관리자만)
+  var noCnt=misData.filter(function(r){return !r.manager&&r.status!=='paid';}).length;
+  var nb=document.getElementById('nomgr-banner');
+  if(noCnt>0&&cu&&cu.role==='admin'){nb.style.display='flex';document.getElementById('nomgr-cnt').textContent=noCnt;}
+  else nb.style.display='none';
+}}
 
 function setMisTab(t,btn){
   misTab=t;
@@ -683,7 +692,8 @@ function renderMis(){
   var isAdm=cu&&cu.role==='admin';
   var f=misData.map(function(r,i){var x=Object.assign({},r);x._i=i;return x;}).filter(function(r){
     if(misTab!=='all'&&r.status!==misTab)return false;
-    if(mgr&&r.manager!==mgr)return false;
+    if(mgr==='__none__'&&r.manager)return false; // 미배정 필터
+    if(mgr&&mgr!=='__none__'&&r.manager!==mgr)return false;
     if(cat&&r.category!==cat)return false;
     if(q&&!(r.name+' '+(r.manager||'')+' '+(r.memo||'')).toLowerCase().includes(q))return false;
     if(!isAdm&&cu){
@@ -744,19 +754,24 @@ function renderMis(){
     } else {
       html+='<tr>'
         +'<td class="nc" onclick="openHist('+r._i+')">'+(r.name)+'</td>'
-        +'<td style="text-align:center;color:var(--muted);font-size:14px;">'+(r.manager||'-')+'</td>'
-        +'<td style="text-align:center;color:var(--muted);font-size:14px;">'+(r.category||'-')+'</td>'
+        +'<td style="text-align:center;color:var(--muted);font-size:14px;">'+(r.manager||'')+'</td>'
+        +'<td style="text-align:center;color:var(--muted);font-size:14px;">'+(r.category||'')+'</td>'
         +'<td style="text-align:center;font-weight:600;color:var(--red);font-size:14px;">'+(parseFloat(r.amount)||0).toLocaleString()+'원</td>'
         +'<td style="text-align:center;color:var(--muted);font-size:14px;">'+paidDisp+'</td>'
         +remCell
         +'<td style="text-align:center;"><select class="isel '+(r.status||'unpaid')+'" onchange="saveStatusById(\''+r.id+'\',this.value,this)">'+opts+'</select></td>'
-        +'<td class="rocell">'+(r.memo||'-')+'</td>'
+        +'<td class="rocell">'+(r.memo||'')+'</td>'
         +editBtn+'</tr>';
     }
   });
   tbody.innerHTML=html;
 }
 
+function filterNoMgr(){
+  var sel=document.getElementById('mis-mgrf');
+  sel.value='__none__';
+  renderMis();
+}
 // 백그라운드 저장 (UI 먼저 업데이트, API는 뒤에서)
 function saveMisRow(idx,patch){
   Object.assign(misData[idx],patch); // 즉시 로컬 반영
@@ -765,7 +780,9 @@ function saveMisRow(idx,patch){
 }
 function saveFld(idx,fld,val){
   var p={};p[fld]=val;p.updated_at=new Date().toISOString();
-  saveMisRow(idx,p);renderMis();
+  saveMisRow(idx,p);
+  updateMgrF(); // 담당자 배정 시 배너 즉시 업데이트
+  renderMis();
 }
 function saveStatusById(id,next,sel){
   var idx=misData.findIndex(function(r){return String(r.id)===String(id);});
