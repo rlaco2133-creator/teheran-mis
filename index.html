@@ -673,31 +673,34 @@ function renderMis(){
       if(!isMe&&!shT){shT=true;html+='<tr class="srow"><td colspan="9">팀 거래처</td></tr>';}
     }
     var rem=getRem(r);
+    // 잔액: 입금액 없으면 미수금 전액 표시
+    var remAmt=rem!==null?rem:(parseFloat(r.amount)||0);
+    var remCell='<td style="text-align:center;font-size:14px;color:'+(remAmt===0?'var(--green)':'var(--orange)')+';">'+remAmt.toLocaleString()+'원</td>';
     var opts=SOPTS.map(function(o){return '<option value="'+o.v+'"'+(r.status===o.v?' selected':'')+'>'+o.l+'</option>';}).join('');
     var mSel='<option value="">-</option>'+mgrList.map(function(m){return '<option value="'+m+'"'+(r.manager===m?' selected':'')+'>'+m+'</option>';}).join('');
     var cSel='<option value="">-</option>'+CATS.map(function(c){return '<option value="'+c+'"'+(r.category===c?' selected':'')+'>'+c+'</option>';}).join('');
-    var remCell=rem!==null?'<td class="rc">'+rem.toLocaleString()+'원</td>':'<td class="mc">-</td>';
     var editBtn=isAdm?'<td><button class="btn" style="font-size:11px;padding:3px 6px;" onclick="openEditMis('+r._i+');event.stopPropagation()">수정</button></td>':'';
+    var paidDisp=r.paid_amount?fmt(r.paid_amount)+'원':'-';
     if(isAdm){
       html+='<tr>'
         +'<td class="nc" onclick="openHist('+r._i+')">'+(r.name)+(r._m?'':' <span style="font-size:10px;color:var(--orange);">⚠</span>')+'</td>'
-        +'<td><select class="isel nm" onchange="saveFld('+r._i+',\'manager\',this.value)">'+mSel+'</select></td>'
-        +'<td><select class="isel cat" onchange="saveFld('+r._i+',\'category\',this.value)">'+cSel+'</select></td>'
-        +'<td class="ac">'+(parseFloat(r.amount)||0).toLocaleString()+'원</td>'
-        +'<td><input class="pinp" id="pi-'+r._i+'" value="'+(r.paid_amount?fmt(r.paid_amount):'')+'" placeholder="0" onkeydown="if(event.key===\'Enter\')this.blur()" onfocus="this.value=this.value.replace(/,/g,\'\')" onblur="savePaid('+r._i+')"/></td>'
+        +'<td style="text-align:center;"><select class="isel nm" onchange="saveFld('+r._i+',\'manager\',this.value)">'+mSel+'</select></td>'
+        +'<td style="text-align:center;"><select class="isel cat" onchange="saveFld('+r._i+',\'category\',this.value)">'+cSel+'</select></td>'
+        +'<td style="text-align:center;font-weight:600;color:var(--red);font-size:14px;">'+(parseFloat(r.amount)||0).toLocaleString()+'원</td>'
+        +'<td style="text-align:center;"><input class="pinp" id="pi-'+r._i+'" value="'+(r.paid_amount?fmt(r.paid_amount):'')+'" placeholder="0" style="text-align:center;" onkeydown="if(event.key===\'Enter\')this.blur()" onfocus="this.value=this.value.replace(/,/g,\'\')" onblur="savePaid('+r._i+')"/></td>'
         +remCell
-        +'<td><select class="isel '+(r.status||'unpaid')+'" onchange="saveStatus('+r._i+',this)">'+opts+'</select></td>'
+        +'<td style="text-align:center;"><select class="isel '+(r.status||'unpaid')+'" onchange="saveStatusById(\''+r.id+'\',this.value,this)">'+opts+'</select></td>'
         +'<td><input class="minp" id="mi-'+r._i+'" value="'+(r.memo||'').replace(/"/g,'&quot;')+'" placeholder="메모..." onkeydown="if(event.key===\'Enter\')this.blur()" onblur="saveMemo('+r._i+')"/></td>'
         +editBtn+'</tr>';
     } else {
       html+='<tr>'
         +'<td class="nc" onclick="openHist('+r._i+')">'+(r.name)+'</td>'
-        +'<td class="rocell">'+(r.manager||'-')+'</td>'
-        +'<td class="rocell">'+(r.category||'-')+'</td>'
-        +'<td class="ac">'+(parseFloat(r.amount)||0).toLocaleString()+'원</td>'
-        +'<td class="rocell">'+(r.paid_amount?fmt(r.paid_amount)+'원':'-')+'</td>'
+        +'<td style="text-align:center;color:var(--muted);font-size:14px;">'+(r.manager||'-')+'</td>'
+        +'<td style="text-align:center;color:var(--muted);font-size:14px;">'+(r.category||'-')+'</td>'
+        +'<td style="text-align:center;font-weight:600;color:var(--red);font-size:14px;">'+(parseFloat(r.amount)||0).toLocaleString()+'원</td>'
+        +'<td style="text-align:center;color:var(--muted);font-size:14px;">'+paidDisp+'</td>'
         +remCell
-        +'<td><select class="isel '+(r.status||'unpaid')+'" onchange="saveStatus('+r._i+',this)">'+opts+'</select></td>'
+        +'<td style="text-align:center;"><select class="isel '+(r.status||'unpaid')+'" onchange="saveStatusById(\''+r.id+'\',this.value,this)">'+opts+'</select></td>'
         +'<td class="rocell">'+(r.memo||'-')+'</td>'
         +editBtn+'</tr>';
     }
@@ -715,20 +718,38 @@ function saveFld(idx,fld,val){
   var p={};p[fld]=val;p.updated_at=new Date().toISOString();
   saveMisRow(idx,p);renderMis();
 }
-function saveStatus(idx,sel){
-  var prev=misData[idx].status,next=sel.value;
+function saveStatusById(id,next,sel){
+  var idx=misData.findIndex(function(r){return String(r.id)===String(id);});
+  if(idx<0)return;
+  var prev=misData[idx].status;
   if(prev===next)return;
+  var amt=parseFloat(misData[idx].amount)||0;
   var logs=(misData[idx].logs||[]).concat([{type:next,author:cu.name,time:now(),content:(SLBL[prev]||prev)+' → '+(SLBL[next]||next)}]);
   var patch={status:next,logs:JSON.stringify(logs),updated_at:new Date().toISOString()};
-  if(next==='paid')patch.paid_amount=misData[idx].amount;
-  // 즉시 UI 반영
+  // 입금완료 → 입금액 전액 자동 입력
+  if(next==='paid'){
+    patch.paid_amount=amt;
+    misData[idx].paid_amount=amt;
+    // 화면의 입금액 input 업데이트
+    var piEl=document.getElementById('pi-'+idx);
+    if(piEl)piEl.value=fmt(amt);
+    // 잔액 td 업데이트
+  }
   misData[idx].status=next;
   misData[idx].logs=logs;
-  if(next==='paid')misData[idx].paid_amount=misData[idx].amount;
   sel.className='isel '+next;
-  updateKPI();renderMis();
-  // 백그라운드 저장
-  sb('mis','PATCH',patch,'?id=eq.'+misData[idx].id).catch(function(e){console.error('저장 실패:',e);});
+  updateKPI();
+  // renderMis 대신 잔액 셀만 업데이트
+  var row=sel.closest('tr');
+  if(row){
+    var tds=row.querySelectorAll('td');
+    var remAmt=next==='paid'?0:(parseFloat(misData[idx].amount)||0)-(parseFloat(misData[idx].paid_amount)||0);
+    if(tds[5]){tds[5].textContent=remAmt.toLocaleString()+'원';tds[5].style.color=remAmt===0?'var(--green)':'var(--orange)';}
+  }
+  sb('mis','PATCH',patch,'?id=eq.'+id).catch(function(e){console.error('저장 실패:',e);});
+}
+function saveStatus(idx,sel){
+  saveStatusById(misData[idx].id,sel.value,sel);
 }
 function savePaid(idx){
   var el=document.getElementById('pi-'+idx);if(!el)return;
