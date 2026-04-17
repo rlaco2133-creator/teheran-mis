@@ -659,7 +659,7 @@ function updateMgrF(){
   var sel=document.getElementById('mis-mgrf'),cur=sel.value;
   sel.innerHTML='<option value="">담당자 전체</option><option value="__none__"'+(cur==='__none__'?' selected':'')+'>담당자 미배정</option>'+mgrs.map(function(m){return '<option'+(m===cur?' selected':'')+'>'+m+'</option>';}).join('');
   // 담당자 미배정 배너 (관리자만)
-  var noCnt=misData.filter(function(r){return !r.manager&&r.status!=='paid';}).length;
+  var noCnt=misData.filter(function(r){return !r.manager;}).length;
   var nb=document.getElementById('nomgr-banner');
   if(noCnt>0&&cu&&cu.role==='admin'){nb.style.display='flex';document.getElementById('nomgr-cnt').textContent=noCnt;}
   else nb.style.display='none';
