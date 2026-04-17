@@ -671,14 +671,15 @@ function renderMis(){
   tbody.innerHTML=html;
 }
 
+// 백그라운드 저장 (UI 먼저 업데이트, API는 뒤에서)
 function saveMisRow(idx,patch){
-  return sb('mis','PATCH',patch,'?id=eq.'+misData[idx].id).then(function(){
-    Object.assign(misData[idx],patch);updateKPI();
-  }).catch(function(e){alert('저장 실패: '+e.message);});
+  Object.assign(misData[idx],patch); // 즉시 로컬 반영
+  updateKPI();
+  sb('mis','PATCH',patch,'?id=eq.'+misData[idx].id).catch(function(e){console.error('저장 실패:',e);});
 }
 function saveFld(idx,fld,val){
   var p={};p[fld]=val;p.updated_at=new Date().toISOString();
-  saveMisRow(idx,p).then(function(){renderMis();});
+  saveMisRow(idx,p);renderMis();
 }
 function saveStatus(idx,sel){
   var prev=misData[idx].status,next=sel.value;
@@ -686,22 +687,34 @@ function saveStatus(idx,sel){
   var logs=(misData[idx].logs||[]).concat([{type:next,author:cu.name,time:now(),content:(SLBL[prev]||prev)+' → '+(SLBL[next]||next)}]);
   var patch={status:next,logs:JSON.stringify(logs),updated_at:new Date().toISOString()};
   if(next==='paid')patch.paid_amount=misData[idx].amount;
+  // 즉시 UI 반영
+  misData[idx].status=next;
+  misData[idx].logs=logs;
+  if(next==='paid')misData[idx].paid_amount=misData[idx].amount;
   sel.className='isel '+next;
-  saveMisRow(idx,patch).then(function(){misData[idx].logs=logs;if(next==='paid')misData[idx].paid_amount=misData[idx].amount;renderMis();});
+  updateKPI();renderMis();
+  // 백그라운드 저장
+  sb('mis','PATCH',patch,'?id=eq.'+misData[idx].id).catch(function(e){console.error('저장 실패:',e);});
 }
 function savePaid(idx){
   var el=document.getElementById('pi-'+idx);if(!el)return;
   var val=pnum(el.value);el.value=fmt(val);
   var amt=parseFloat(misData[idx].amount)||0;
-  var st=misData[idx].status;
   var nst=val>=amt?'paid':val>0?'partial':'unpaid';
   var logs=(misData[idx].logs||[]).concat([{type:'memo',author:cu.name,time:now(),content:'입금액 '+val.toLocaleString()+'원 입력'}]);
-  saveMisRow(idx,{paid_amount:val,status:nst,logs:JSON.stringify(logs),updated_at:new Date().toISOString()}).then(function(){misData[idx].logs=logs;renderMis();});
+  // 즉시 UI 반영
+  misData[idx].paid_amount=val;
+  misData[idx].status=nst;
+  misData[idx].logs=logs;
+  updateKPI();renderMis();
+  // 백그라운드 저장
+  sb('mis','PATCH',{paid_amount:val,status:nst,logs:JSON.stringify(logs),updated_at:new Date().toISOString()},'?id=eq.'+misData[idx].id).catch(function(e){console.error('저장 실패:',e);});
 }
 function saveMemo(idx){
   var val=document.getElementById('mi-'+idx)&&document.getElementById('mi-'+idx).value||'';
   if(misData[idx].memo===val)return;
-  saveMisRow(idx,{memo:val,updated_at:new Date().toISOString()});
+  misData[idx].memo=val;
+  sb('mis','PATCH',{memo:val,updated_at:new Date().toISOString()},'?id=eq.'+misData[idx].id).catch(function(e){console.error('저장 실패:',e);});
 }
 
 function openHist(idx){
@@ -904,12 +917,13 @@ function openAddMember(){
 function doAddMb(){
   var name=document.getElementById('mb-name').value.trim();
   if(!name){alert('이름을 입력해주세요.');return;}
-  load('추가 중...');
-  sb('members','POST',{name:name,department:document.getElementById('mb-dept').value.trim(),position:document.getElementById('mb-pos').value.trim(),role:document.getElementById('mb-role').value}).then(function(){
-    document.getElementById('mb-name').value='';
-    document.getElementById('mb-pos').value='';
-    loadMembers();
-  }).catch(function(e){alert('추가 실패: '+e.message);hide();});
+  var newMb={name:name,department:document.getElementById('mb-dept').value,position:document.getElementById('mb-pos').value.trim(),role:document.getElementById('mb-role').value};
+  document.getElementById('mb-name').value='';
+  document.getElementById('mb-pos').value='';
+  sb('members','POST',newMb).then(function(res){
+    members.push(Array.isArray(res)?res[0]:res);
+    renderMembers();
+  }).catch(function(e){alert('추가 실패: '+e.message);});
 }
 function openEditMb(idx){
   var m=members[idx];
@@ -921,13 +935,17 @@ function openEditMb(idx){
     +'<div class="mbtns"><button class="btn" onclick="closeModal()">취소</button><button class="btn pri" onclick="doEditMb('+idx+')">저장</button></div>');
 }
 function doEditMb(idx){
-  load('저장 중...');
-  sb('members','PATCH',{name:document.getElementById('m-name').value.trim(),department:document.getElementById('m-dept').value.trim(),position:document.getElementById('m-pos').value.trim(),role:document.getElementById('m-role').value},'?id=eq.'+members[idx].id).then(function(){loadMembers();closeModal();}).catch(function(e){alert('저장 실패: '+e.message);hide();});
+  var patch={name:document.getElementById('m-name').value.trim(),department:document.getElementById('m-dept').value,position:document.getElementById('m-pos').value.trim(),role:document.getElementById('m-role').value};
+  Object.assign(members[idx],patch);
+  renderMembers();closeModal();
+  sb('members','PATCH',patch,'?id=eq.'+members[idx].id).catch(function(e){console.error('저장 실패:',e);});
 }
 function doDelMb(idx){
   if(!confirm(members[idx].name+'을(를) 삭제할까요?'))return;
-  load('삭제 중...');
-  sb('members','DELETE',null,'?id=eq.'+members[idx].id).then(function(){loadMembers();}).catch(function(e){alert('삭제 실패: '+e.message);hide();});
+  var id=members[idx].id;
+  members.splice(idx,1);
+  renderMembers();
+  sb('members','DELETE',null,'?id=eq.'+id).catch(function(e){console.error('삭제 실패:',e);});
 }
 
 // 비밀번호 변경
