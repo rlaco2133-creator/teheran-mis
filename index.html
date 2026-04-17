@@ -122,8 +122,8 @@ tbody tr{border-bottom:0.5px solid var(--border);}
 tbody tr:last-child{border-bottom:none;}
 tbody tr:hover{background:var(--gray);}
 tbody td{padding:10px 14px;font-size:14px;vertical-align:middle;}
-.srow td{background:#f7f6f3;font-size:11px;font-weight:600;color:var(--muted);padding:5px 14px;letter-spacing:0.04em;}
-.srow:hover{background:#f7f6f3 !important;cursor:default;}
+.srow td{background:#f0efe9;font-size:13px;font-weight:600;color:#555;padding:10px 14px;letter-spacing:0.02em;}
+.srow:hover{background:#f0efe9 !important;cursor:default;}
 .nc{font-weight:500;cursor:pointer;color:var(--accent);}
 .nc:hover{text-decoration:underline;}
 .ac{text-align:right;font-weight:600;color:var(--red);white-space:nowrap;}
@@ -604,16 +604,20 @@ function matchCl(){
 }
 
 function updateKPI(){
-  var tot=0,up=0,no=0,pa=0;
+  var tot=0,up=0,no=0,pa=0,cnt=0;
   misData.forEach(function(r){
     var a=parseFloat(r.amount)||0,p=parseFloat(r.paid_amount)||0;
-    if(r.status!=='paid') tot+=(a-p>0?a-p:a);
+    var remain=a-p;
+    if(r.status!=='paid'){
+      tot+=(remain>0?remain:a);
+      cnt++; // 잔액 남은 건수
+    }
     if(r.status==='unpaid') up++;
     else if(r.status==='notified') no++;
     else if(r.status==='partial') pa++;
   });
   document.getElementById('k-tot').textContent=tot.toLocaleString()+'원';
-  document.getElementById('k-cnt').textContent=misData.length+'건';
+  document.getElementById('k-cnt').textContent=cnt+'건';
   document.getElementById('k-up').textContent=up;
   document.getElementById('k-no').textContent=no;
   document.getElementById('k-pa').textContent=pa;
