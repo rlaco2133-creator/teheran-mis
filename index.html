@@ -339,38 +339,39 @@ input[type=file]{display:none;}
         <div class="ptitle">구성원 관리</div>
         <div class="psub">이름 / 직급 / 소속 / 권한</div>
       </div>
-      <div class="tcard">
+      <div class="tcard" style="max-width:860px;">
         <div class="tscroll">
-          <table id="mb-table">
+          <table id="mb-table" style="min-width:unset;font-size:14px;">
             <thead><tr>
-              <th>이름</th>
-              <th>직급</th>
-              <th>소속</th>
-              <th>권한</th>
-              <th style="width:120px;"></th>
+              <th style="width:180px;">이름</th>
+              <th style="width:160px;">직급</th>
+              <th style="width:120px;">소속</th>
+              <th style="width:100px;">권한</th>
+              <th style="width:130px;"></th>
             </tr></thead>
             <tbody id="mb-body"></tbody>
             <tfoot>
               <tr style="background:var(--gray);border-top:0.5px solid var(--border);">
-                <td style="padding:8px 10px;"><input id="mb-name" class="minp" placeholder="이름" style="width:100%;"/></td>
-                <td style="padding:8px 10px;"><input id="mb-pos" class="minp" placeholder="직급 (예: 대리, 과장)" style="width:100%;"/></td>
+                <td style="padding:8px 10px;"><input id="mb-name" class="minp" placeholder="이름" style="width:100%;font-size:14px;"/></td>
+                <td style="padding:8px 10px;"><input id="mb-pos" class="minp" placeholder="직급 (예: 대리, 과장)" style="width:100%;font-size:14px;"/></td>
                 <td style="padding:8px 10px;">
-                  <select id="mb-dept" class="minp" style="width:100%;">
+                  <select id="mb-dept" class="minp" style="width:100%;font-size:14px;">
                     <option value="">소속 선택</option>
                     <option>본부</option>
                     <option>1팀</option>
                     <option>2팀</option>
                     <option>3팀</option>
+                    <option>회계팀</option>
                   </select>
                 </td>
                 <td style="padding:8px 10px;">
-                  <select id="mb-role" class="minp" style="width:100%;">
+                  <select id="mb-role" class="minp" style="width:100%;font-size:14px;">
                     <option value="user">사용자</option>
                     <option value="admin">관리자</option>
                   </select>
                 </td>
                 <td style="padding:8px 10px;">
-                  <button class="btn pri" style="width:100%;" onclick="doAddMb()">+ 추가</button>
+                  <button class="btn pri" style="width:100%;font-size:14px;" onclick="doAddMb()">+ 추가</button>
                 </td>
               </tr>
             </tfoot>
@@ -892,15 +893,32 @@ function loadMembers(){
 function renderMembers(){
   var tbody=document.getElementById('mb-body');if(!tbody)return;
   if(!members.length){tbody.innerHTML='<tr><td colspan="5"><div class="empty">구성원이 없어요. 아래에서 추가해주세요!</div></td></tr>';return;}
-  tbody.innerHTML=members.map(function(m,i){
-    return '<tr>'
-      +'<td style="font-weight:500;">'+m.name+'</td>'
-      +'<td class="mc">'+(m.position||'-')+'</td>'
-      +'<td><span class="bdg '+(m.department==='회계팀'?'no':'usr')+'">'+( m.department||'-')+'</span></td>'
-      +'<td><span class="bdg '+(m.role==='admin'?'adm':'usr')+'">'+(m.role==='admin'?'관리자':'사용자')+'</span></td>'
-      +'<td style="display:flex;gap:6px;padding:8px 14px;">'
-        +'<button class="btn" style="font-size:11px;padding:3px 8px;" onclick="openEditMb('+i+')">수정</button>'
-        +'<button class="btn dan" style="font-size:11px;padding:3px 8px;" onclick="doDelMb('+i+')">삭제</button>'
+  var deptOrder={'본부':0,'1팀':1,'2팀':2,'3팀':3,'회계팀':4};
+  var deptColor={
+    '본부':'background:#e0f2fe;color:#0369a1;',
+    '1팀':'background:#f0fdf4;color:#15803d;',
+    '2팀':'background:#fdf4ff;color:#9333ea;',
+    '3팀':'background:#fff7ed;color:#c2410c;',
+    '회계팀':'background:#fef9c3;color:#854d0e;'
+  };
+  var sorted=members.slice().sort(function(a,b){
+    var da=deptOrder[a.department]!==undefined?deptOrder[a.department]:99;
+    var db=deptOrder[b.department]!==undefined?deptOrder[b.department]:99;
+    if(da!==db)return da-db;
+    return (a.name||'').localeCompare(b.name||'','ko');
+  });
+  tbody.innerHTML=sorted.map(function(m,i){
+    var origIdx=members.indexOf(m);
+    var dc=deptColor[m.department]||'background:var(--gray);color:var(--muted);';
+    var deptBadge=m.department?'<span style="'+dc+'padding:2px 9px;border-radius:10px;font-size:12px;font-weight:500;">'+m.department+'</span>':'-';
+    return '<tr style="font-size:14px;">'
+      +'<td style="font-weight:500;padding:10px 14px;">'+m.name+'</td>'
+      +'<td style="padding:10px 14px;color:var(--muted);">'+(m.position||'-')+'</td>'
+      +'<td style="padding:10px 14px;">'+deptBadge+'</td>'
+      +'<td style="padding:10px 14px;"><span class="bdg '+(m.role==='admin'?'adm':'usr')+'">'+(m.role==='admin'?'관리자':'사용자')+'</span></td>'
+      +'<td style="padding:10px 14px;display:flex;gap:6px;">'
+        +'<button class="btn" style="font-size:12px;padding:4px 10px;" onclick="openEditMb('+origIdx+')">수정</button>'
+        +'<button class="btn dan" style="font-size:12px;padding:4px 10px;" onclick="doDelMb('+origIdx+')">삭제</button>'
       +'</td>'
     +'</tr>';
   }).join('');
@@ -929,7 +947,7 @@ function openEditMb(idx){
   var m=members[idx];
   openMod('<div class="mtitle">구성원 수정</div>'
     +'<div class="field"><label>이름</label><input id="m-name" value="'+(m.name||'')+'"/></div>'
-    +'<div class="row2"><div class="field"><label>소속</label><select id="m-dept"><option value="">소속 선택</option><option'+(m.department==='본부'?' selected':'')+'>본부</option><option'+(m.department==='1팀'?' selected':'')+'>1팀</option><option'+(m.department==='2팀'?' selected':'')+'>2팀</option><option'+(m.department==='3팀'?' selected':'')+'>3팀</option></select></div>'
+    +'<div class="row2"><div class="field"><label>소속</label><select id="m-dept"><option value="">소속 선택</option><option'+(m.department==='본부'?' selected':'')+'>본부</option><option'+(m.department==='1팀'?' selected':'')+'>1팀</option><option'+(m.department==='2팀'?' selected':'')+'>2팀</option><option'+(m.department==='3팀'?' selected':'')+'>3팀</option><option'+(m.department==='회계팀'?' selected':'')+'>회계팀</option></select></div>'
     +'<div class="field"><label>직급</label><input id="m-pos" value="'+(m.position||'')+'"/></div></div>'
     +'<div class="field"><label>권한</label><select id="m-role"><option value="user"'+(m.role==='user'?' selected':'')+'>사용자</option><option value="admin"'+(m.role==='admin'?' selected':'')+'>관리자</option></select></div>'
     +'<div class="mbtns"><button class="btn" onclick="closeModal()">취소</button><button class="btn pri" onclick="doEditMb('+idx+')">저장</button></div>');
