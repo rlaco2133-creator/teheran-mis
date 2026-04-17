@@ -265,7 +265,7 @@ input[type=file]{display:none;}
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button class="btn suc" id="xl-btn" style="display:none;" onclick="document.getElementById('xl-inp').click()">📂 엑셀 업로드</button>
           <input type="file" id="xl-inp" accept=".xlsx,.xls" onchange="handleExcel(event)"/>
-          <button class="btn pri" onclick="loadMis()">🔄 새로고침</button>
+          <button class="btn pri" onclick="reloadAll()">🔄 새로고침</button>
         </div>
       </div>
       <div class="kgrid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));">
@@ -536,11 +536,15 @@ function enterApp(){
   var lastPage=sessionStorage.getItem('lastPage')||'mis';
   var btn=document.getElementById('n-'+lastPage)||document.getElementById('n-mis');
   gotoPage(lastPage,btn);
-  // clients 먼저 로드 → 그 다음 mis 로드 (매칭 정확도 보장)
   loadMembers();
-  loadClients().then(function(){
-    loadMis();
-  });
+  load('데이터 불러오는 중...');
+  Promise.all([loadClients(), loadMis()]).then(function(){
+    matchCl();
+    updateKPI();
+    updateMgrF();
+    renderMis();
+    hide();
+  }).catch(function(){hide();});
 }
 
 function doLogout(){
@@ -569,17 +573,21 @@ function gotoPage(pg,btn){
 }
 
 // 미수금
+function reloadAll(){
+  load('새로고침 중...');
+  Promise.all([loadClients(), loadMis()]).then(function(){
+    matchCl();updateKPI();updateMgrF();renderMis();hide();
+  }).catch(function(){hide();});
+}
 function loadMis(){
-  load('미수금 데이터 불러오는 중...');
   return sb('mis','GET',null,'?order=amount.desc').then(function(rows){
     misData=rows.map(function(r){
       r.logs=typeof r.logs==='string'?JSON.parse(r.logs||'[]'):r.logs||[];
       return r;
     });
-    matchCl();updateKPI();updateMgrF();renderMis();
+    updateMgrF();
     document.getElementById('mis-upd').textContent=misData.length+'건 · '+new Date().toLocaleString('ko-KR');
-    hide();
-  }).catch(function(e){alert('미수금 로드 실패: '+e.message);hide();});
+  }).catch(function(e){alert('미수금 로드 실패: '+e.message);});
 }
 
 function matchCl(){
