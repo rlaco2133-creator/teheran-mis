@@ -461,12 +461,25 @@ function loadUserList(){
 function doLogin(){
   if(role==='admin'){
     var pw=document.getElementById('adm-pw').value;
-    if(pw===ADMIN_PW){
-      cu={id:'admin',name:'관리자',department:'',position:'대표',role:'admin'};
-      enterApp();
-    } else {
-      document.getElementById('adm-err').style.display='block';
-    }
+    // Supabase에서 최신 비밀번호 읽어서 비교
+    sb('settings','GET',null,'?key=eq.admin_password').then(function(rows){
+      var saved=rows[0]&&rows[0].value?rows[0].value:ADMIN_PW;
+      if(pw===saved){
+        ADMIN_PW=saved; // 메모리 동기화
+        cu={id:'admin',name:'관리자',department:'',position:'대표',role:'admin'};
+        enterApp();
+      } else {
+        document.getElementById('adm-err').style.display='block';
+      }
+    }).catch(function(){
+      // Supabase 실패 시 기본값으로 비교
+      if(pw===ADMIN_PW){
+        cu={id:'admin',name:'관리자',department:'',position:'대표',role:'admin'};
+        enterApp();
+      } else {
+        document.getElementById('adm-err').style.display='block';
+      }
+    });
   } else {
     var id=document.getElementById('usr-sel').value;
     if(!id){document.getElementById('usr-err').style.display='block';return;}
