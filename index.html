@@ -343,10 +343,10 @@ input[type=file]{display:none;}
         <div class="tscroll">
           <table id="mb-table" style="min-width:unset;font-size:14px;">
             <thead><tr>
-              <th style="width:180px;">이름</th>
-              <th style="width:160px;">직급</th>
-              <th style="width:120px;">소속</th>
-              <th style="width:100px;">권한</th>
+              <th style="width:180px;font-size:14px;">이름</th>
+              <th style="width:160px;font-size:14px;">직급</th>
+              <th style="width:120px;font-size:14px;">소속</th>
+              <th style="width:100px;font-size:14px;">권한</th>
               <th style="width:130px;"></th>
             </tr></thead>
             <tbody id="mb-body"></tbody>
@@ -895,11 +895,11 @@ function renderMembers(){
   if(!members.length){tbody.innerHTML='<tr><td colspan="5"><div class="empty">구성원이 없어요. 아래에서 추가해주세요!</div></td></tr>';return;}
   var deptOrder={'본부':0,'1팀':1,'2팀':2,'3팀':3,'회계팀':4};
   var deptColor={
-    '본부':'background:#e0f2fe;color:#0369a1;',
-    '1팀':'background:#f0fdf4;color:#15803d;',
-    '2팀':'background:#fdf4ff;color:#9333ea;',
-    '3팀':'background:#fff7ed;color:#c2410c;',
-    '회계팀':'background:#fef9c3;color:#854d0e;'
+    '본부':  'background:#fef9c3;color:#78350f;',
+    '1팀':   'background:#dcfce7;color:#14532d;',
+    '2팀':   'background:#dbeafe;color:#1e3a8a;',
+    '3팀':   'background:#fce7f3;color:#831843;',
+    '회계팀':'background:#f3e8ff;color:#581c87;'
   };
   var sorted=members.slice().sort(function(a,b){
     var da=deptOrder[a.department]!==undefined?deptOrder[a.department]:99;
@@ -907,18 +907,18 @@ function renderMembers(){
     if(da!==db)return da-db;
     return (a.name||'').localeCompare(b.name||'','ko');
   });
-  tbody.innerHTML=sorted.map(function(m,i){
+  tbody.innerHTML=sorted.map(function(m){
     var origIdx=members.indexOf(m);
     var dc=deptColor[m.department]||'background:var(--gray);color:var(--muted);';
-    var deptBadge=m.department?'<span style="'+dc+'padding:2px 9px;border-radius:10px;font-size:12px;font-weight:500;">'+m.department+'</span>':'-';
+    var deptBadge=m.department?'<span style="'+dc+'padding:3px 11px;border-radius:10px;font-size:14px;font-weight:500;">'+m.department+'</span>':'-';
     return '<tr style="font-size:14px;">'
-      +'<td style="font-weight:500;padding:10px 14px;">'+m.name+'</td>'
-      +'<td style="padding:10px 14px;color:var(--muted);">'+(m.position||'-')+'</td>'
-      +'<td style="padding:10px 14px;">'+deptBadge+'</td>'
-      +'<td style="padding:10px 14px;"><span class="bdg '+(m.role==='admin'?'adm':'usr')+'">'+(m.role==='admin'?'관리자':'사용자')+'</span></td>'
-      +'<td style="padding:10px 14px;display:flex;gap:6px;">'
-        +'<button class="btn" style="font-size:12px;padding:4px 10px;" onclick="openEditMb('+origIdx+')">수정</button>'
-        +'<button class="btn dan" style="font-size:12px;padding:4px 10px;" onclick="doDelMb('+origIdx+')">삭제</button>'
+      +'<td style="font-weight:500;padding:11px 14px;font-size:14px;">'+m.name+'</td>'
+      +'<td style="padding:11px 14px;font-size:14px;color:var(--muted);">'+(m.position||'-')+'</td>'
+      +'<td style="padding:11px 14px;">'+deptBadge+'</td>'
+      +'<td style="padding:11px 14px;"><span style="padding:3px 11px;border-radius:10px;font-size:14px;font-weight:500;'+(m.role==='admin'?'background:var(--orange-bg);color:var(--orange);':'background:var(--accent-bg);color:var(--accent);')+'">'+(m.role==='admin'?'관리자':'사용자')+'</span></td>'
+      +'<td style="padding:11px 14px;display:flex;gap:6px;">'
+        +'<button class="btn" style="font-size:13px;padding:5px 12px;" onclick="openEditMb('+origIdx+')">수정</button>'
+        +'<button class="btn dan" style="font-size:13px;padding:5px 12px;" onclick="doDelMb('+origIdx+')">삭제</button>'
       +'</td>'
     +'</tr>';
   }).join('');
