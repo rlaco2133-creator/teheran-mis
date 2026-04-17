@@ -113,7 +113,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .tcard{background:var(--surface);border:0.5px solid var(--border);border-radius:var(--rl);overflow:hidden;}
 .tscroll{overflow-x:auto;}
 table{width:100%;border-collapse:collapse;min-width:1000px;}
-thead th{background:var(--gray);padding:10px 14px;text-align:left;font-size:11px;font-weight:600;color:var(--muted);border-bottom:0.5px solid var(--border);white-space:nowrap;position:sticky;top:0;z-index:5;letter-spacing:0.04em;text-transform:uppercase;}
+thead th{background:var(--gray);padding:10px 14px;text-align:left;font-size:12px;font-weight:600;color:var(--muted);border-bottom:0.5px solid var(--border);white-space:nowrap;position:sticky;top:0;z-index:5;}
 thead th.sort{cursor:pointer;}
 thead th.sort:hover{color:var(--text);}
 thead th.sasc::after{content:' ↑';color:var(--accent);}
@@ -121,7 +121,7 @@ thead th.sdesc::after{content:' ↓';color:var(--accent);}
 tbody tr{border-bottom:0.5px solid var(--border);}
 tbody tr:last-child{border-bottom:none;}
 tbody tr:hover{background:var(--gray);}
-tbody td{padding:10px 14px;font-size:13px;vertical-align:middle;}
+tbody td{padding:10px 14px;font-size:14px;vertical-align:middle;}
 .srow td{background:#f7f6f3;font-size:11px;font-weight:600;color:var(--muted);padding:5px 14px;letter-spacing:0.04em;}
 .srow:hover{background:#f7f6f3 !important;cursor:default;}
 .nc{font-weight:500;cursor:pointer;color:var(--accent);}
@@ -131,11 +131,11 @@ tbody td{padding:10px 14px;font-size:13px;vertical-align:middle;}
 .mc{color:var(--muted);font-size:12px;}
 
 /* 인라인 컨트롤 */
-.isel{padding:4px 20px 4px 8px;border-radius:20px;font-size:11px;font-weight:500;cursor:pointer;border:0.5px solid transparent;font-family:inherit;appearance:none;-webkit-appearance:none;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23999'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 6px center;}
-.isel.unpaid{background-color:var(--red-bg);color:var(--red);border-color:var(--red-bd);}
-.isel.notified{background-color:var(--orange-bg);color:var(--orange);border-color:var(--orange-bd);}
-.isel.partial{background-color:var(--accent-bg);color:var(--accent);border-color:var(--accent-bd);}
-.isel.paid{background-color:var(--green-bg);color:var(--green);border-color:var(--green-bd);}
+.isel{padding:4px 20px 4px 8px;border-radius:6px;font-size:12px;font-weight:500;cursor:pointer;border:0.5px solid var(--border);font-family:inherit;appearance:none;-webkit-appearance:none;background-color:var(--gray);color:var(--text);background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='8' height='5'%3E%3Cpath d='M0 0l4 5 4-5z' fill='%23999'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 6px center;}
+.isel.unpaid{background-color:#fef2f2;color:#dc2626;border-color:#fecaca;}
+.isel.notified{background-color:#fffbeb;color:#d97706;border-color:#fde68a;}
+.isel.partial{background-color:#f0fdf4;color:#16a34a;border-color:#bbf7d0;}
+.isel.paid{background-color:#e0f2fe;color:#0369a1;border-color:#bae6fd;}
 .isel.nm{background-color:var(--gray);color:var(--text);border-color:var(--border);}
 .isel.cat{background-color:var(--purple-bg);color:var(--purple);border-color:var(--purple-bd);}
 .pinp{padding:4px 8px;border:0.5px solid var(--border);border-radius:6px;font-size:12px;font-family:inherit;background:var(--surface);color:var(--text);width:100px;text-align:right;}
@@ -268,13 +268,12 @@ input[type=file]{display:none;}
           <button class="btn pri" onclick="loadMis()">🔄 새로고침</button>
         </div>
       </div>
-      <div class="kgrid">
+      <div class="kgrid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));">
         <div class="kcard"><div class="klbl">총 미수금</div><div class="kval red" id="k-tot">-</div><div class="ksub" id="k-cnt">-건</div></div>
+        <div class="kcard"><div class="klbl">잔여 미수금</div><div class="kval ora" id="k-rm">-</div><div class="ksub">입금 후 남은 금액</div></div>
         <div class="kcard"><div class="klbl">미처리</div><div class="kval gry" id="k-up">-</div><div class="ksub">건</div></div>
         <div class="kcard"><div class="klbl">안내완료</div><div class="kval ora" id="k-no">-</div><div class="ksub">건</div></div>
-        <div class="kcard"><div class="klbl">일부입금</div><div class="kval blu" id="k-pa">-</div><div class="ksub">건</div></div>
-        <div class="kcard"><div class="klbl">입금완료</div><div class="kval grn" id="k-pd">-</div><div class="ksub" id="k-pdamt"></div></div>
-        <div class="kcard"><div class="klbl">잔여 미수</div><div class="kval ora" id="k-rm">-</div><div class="ksub">일부입금 후 잔액</div></div>
+        <div class="kcard"><div class="klbl">일부입금</div><div class="kval grn" id="k-pa">-</div><div class="ksub">건</div></div>
       </div>
       <div class="banner war" id="um-banner" style="display:none;">
         <div class="bantxt">⚠ <strong id="um-cnt">0</strong>건의 거래처가 매칭되지 않았어요!</div>
@@ -516,18 +515,22 @@ function enterApp(){
   document.getElementById('u-role').textContent=cu.role==='admin'?'관리자 · '+(cu.position||''):(cu.department||'')+' · '+(cu.position||'');
   if(cu.role==='admin'){
     document.getElementById('n-members').style.display='';
-    document.getElementById('n-settings').style.display='';
     document.getElementById('xl-btn').style.display='';
     document.getElementById('add-mis').style.display='';
     document.getElementById('edit-col').style.display='';
+    // 설정 메뉴는 대표만
+    if(cu.position==='대표'){
+      document.getElementById('n-settings').style.display='';
+    }
   }
+  // 세션에 현재 페이지 저장/복원
+  var lastPage=sessionStorage.getItem('lastPage')||( cu.role==='admin'?'members':'mis');
   loadMembers().then(function(){
     loadClients();
-    if(cu.role==='admin'){
-      gotoPage('members',document.getElementById('n-members'));
-    } else {
-      loadMis().then(function(){gotoPage('mis',document.getElementById('n-mis'));});
-    }
+    loadMis().then(function(){
+      var btn=document.getElementById('n-'+lastPage)||document.getElementById('n-mis');
+      gotoPage(lastPage,btn);
+    });
   });
 }
 
@@ -549,6 +552,7 @@ function gotoPage(pg,btn){
   document.querySelectorAll('.nitem').forEach(function(b){b.classList.remove('active');});
   document.getElementById('page-'+pg).classList.add('active');
   if(btn)btn.classList.add('active');
+  sessionStorage.setItem('lastPage',pg);
   if(pg==='clients')renderClients();
   if(pg==='members')renderMembers();
 }
@@ -580,22 +584,20 @@ function matchCl(){
 }
 
 function updateKPI(){
-  var tot=0,up=0,no=0,pa=0,pd=0,pdAmt=0,rm=0;
+  var tot=0,up=0,no=0,pa=0,rm=0;
   misData.forEach(function(r){
     var a=parseFloat(r.amount)||0,p=parseFloat(r.paid_amount)||0;
-    tot+=a;
-    if(r.status==='unpaid')up++;
-    else if(r.status==='notified')no++;
+    // 총 미수금 = 미납 잔액 합계 (입금완료 제외)
+    if(r.status!=='paid') tot+=(a-p>0?a-p:a);
+    if(r.status==='unpaid') up++;
+    else if(r.status==='notified') no++;
     else if(r.status==='partial'){pa++;rm+=(a-p);}
-    else if(r.status==='paid'){pd++;pdAmt+=a;}
   });
   document.getElementById('k-tot').textContent=tot.toLocaleString()+'원';
   document.getElementById('k-cnt').textContent=misData.length+'건';
   document.getElementById('k-up').textContent=up;
   document.getElementById('k-no').textContent=no;
   document.getElementById('k-pa').textContent=pa;
-  document.getElementById('k-pd').textContent=pd;
-  document.getElementById('k-pdamt').textContent=pdAmt.toLocaleString()+'원 완납';
   document.getElementById('k-rm').textContent=rm.toLocaleString()+'원';
 }
 
