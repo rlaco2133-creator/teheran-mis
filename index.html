@@ -465,8 +465,17 @@ function loadAdminList(){
   if(!sel)return;
   sel.innerHTML='<option value="">관리자 선택...</option>';
   sb('members','GET',null,'?role=eq.admin&order=name').then(function(rows){
-    if(!rows.length) sel.innerHTML='<option value="">등록된 관리자 없음</option>';
-    else sel.innerHTML='<option value="">관리자 선택...</option>'+rows.map(function(m){return '<option value="'+m.id+'">'+m.name+' ('+( m.department||'-')+')</option>';}).join('');
+    if(!rows.length){sel.innerHTML='<option value="">등록된 관리자 없음</option>';return;}
+    // 서혁진 맨 위, 나머지 이름순
+    rows.sort(function(a,b){
+      if(a.name==='서혁진') return -1;
+      if(b.name==='서혁진') return 1;
+      return (a.name||'').localeCompare(b.name||'','ko');
+    });
+    sel.innerHTML='<option value="">관리자 선택...</option>'+rows.map(function(m){
+      var label=m.name+(m.position?' ('+m.position+')':m.department?' ('+m.department+')':'');
+      return '<option value="'+m.id+'">'+label+'</option>';
+    }).join('');
   }).catch(function(){sel.innerHTML='<option value="">로드 실패</option>';});
 }
 
@@ -474,8 +483,11 @@ function loadUserList(){
   var sel=document.getElementById('usr-sel');
   sel.innerHTML='<option value="">불러오는 중...</option>';
   sb('members','GET',null,'?role=eq.user&order=name').then(function(rows){
-    if(!rows.length) sel.innerHTML='<option value="">등록된 사용자 없음</option>';
-    else sel.innerHTML='<option value="">이름 선택...</option>'+rows.map(function(m){return '<option value="'+m.id+'">'+m.name+' ('+( m.department||'-')+')</option>';}).join('');
+    if(!rows.length){sel.innerHTML='<option value="">등록된 사용자 없음</option>';return;}
+    sel.innerHTML='<option value="">이름 선택...</option>'+rows.map(function(m){
+      var label=m.name+(m.position?' ('+m.position+')':m.department?' ('+m.department+')':'');
+      return '<option value="'+m.id+'">'+label+'</option>';
+    }).join('');
   }).catch(function(){sel.innerHTML='<option value="">로드 실패</option>';});
 }
 
@@ -524,15 +536,27 @@ function enterApp(){
   document.getElementById('u-av').textContent=ini(cu.name);
   document.getElementById('u-name').textContent=cu.name;
   document.getElementById('u-role').textContent=cu.role==='admin'?'관리자 · '+(cu.position||''):(cu.department||'')+' · '+(cu.position||'');
+
+  // 모든 메뉴/버튼 먼저 숨기기
+  document.getElementById('n-members').style.display='none';
+  document.getElementById('n-settings').style.display='none';
+  document.getElementById('xl-btn').style.display='none';
+  document.getElementById('add-mis').style.display='none';
+  document.getElementById('edit-col').style.display='none';
+
+  // 권한별 메뉴 표시
   if(cu.role==='admin'){
+    // 관리자: 미수금현황 + 거래처관리 + 구성원관리
     document.getElementById('n-members').style.display='';
     document.getElementById('xl-btn').style.display='';
     document.getElementById('add-mis').style.display='';
     document.getElementById('edit-col').style.display='';
+    // 대표만: 설정 메뉴 추가
     if(cu.position==='대표'){
       document.getElementById('n-settings').style.display='';
     }
   }
+  // 사용자: 미수금현황 + 거래처관리만 (추가 메뉴 없음)
   var lastPage=sessionStorage.getItem('lastPage')||'mis';
   var btn=document.getElementById('n-'+lastPage)||document.getElementById('n-mis');
   gotoPage(lastPage,btn);
