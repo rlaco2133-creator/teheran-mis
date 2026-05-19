@@ -265,6 +265,7 @@ input[type=file]{display:none;}
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
           <button class="btn suc" id="xl-btn" style="display:none;" onclick="document.getElementById('xl-inp').click()">📂 엑셀 업로드</button>
           <input type="file" id="xl-inp" accept=".xlsx,.xls" onchange="handleExcel(event)"/>
+          <button class="btn" id="dl-btn" style="display:none;" onclick="downloadExcel()">⬇️ 엑셀 다운로드</button>
           <button class="btn pri" onclick="reloadAll()">🔄 새로고침</button>
         </div>
       </div>
@@ -555,6 +556,7 @@ function enterApp(){
     document.getElementById('xl-btn').style.display='';
     document.getElementById('add-mis').style.display='';
     document.getElementById('edit-col').style.display='';
+    document.getElementById('dl-btn').style.display='';
     // 대표만: 설정 메뉴 추가
     if(cu.position==='대표'){
       document.getElementById('n-settings').style.display='';
@@ -767,6 +769,48 @@ function renderMis(){
   tbody.innerHTML=html;
 }
 
+function downloadExcel(){
+  var q=document.getElementById('mis-q').value.trim().toLowerCase();
+  var mgr=document.getElementById('mis-mgrf').value;
+  var cat=document.getElementById('mis-catf').value;
+  var isAdm=cu&&cu.role==='admin';
+  var f=misData.filter(function(r){
+    if(misTab!=='all'&&r.status!==misTab)return false;
+    if(mgr==='__none__'&&r.manager)return false;
+    if(mgr&&mgr!=='__none__'&&r.manager!==mgr)return false;
+    if(cat&&r.category!==cat)return false;
+    if(q&&!(r.name+' '+(r.manager||'')+' '+(r.memo||'')).toLowerCase().includes(q))return false;
+    if(!isAdm&&cu){
+      var myDept=cu.department;
+      var mm=members.filter(function(m){return m.name===r.manager;})[0];
+      if(myDept&&mm&&mm.department!==myDept)return false;
+    }
+    return true;
+  });
+  var SLBL2={unpaid:'미처리',notified:'안내완료',partial:'일부입금',paid:'입금완료'};
+  var rows=[['거래처명','담당자','구분','미수금액','입금액','잔액','처리상태','메모']];
+  f.forEach(function(r){
+    var a=parseFloat(r.amount)||0,p=parseFloat(r.paid_amount)||0;
+    var rem=p>0?a-p:a;
+    rows.push([
+      r.name||'',
+      r.manager||'',
+      r.category||'',
+      a,
+      p||0,
+      rem,
+      SLBL2[r.status]||r.status||'',
+      r.memo||''
+    ]);
+  });
+  var ws=XLSX.utils.aoa_to_sheet(rows);
+  // 컬럼 너비 설정
+  ws['!cols']=[{wch:30},{wch:12},{wch:14},{wch:14},{wch:14},{wch:14},{wch:12},{wch:30}];
+  var wb=XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb,ws,'미수금현황');
+  var date=new Date().toLocaleDateString('ko-KR').replace(/\. /g,'-').replace('.','');
+  XLSX.writeFile(wb,'미수금현황_'+date+'.xlsx');
+}
 function filterNoMgr(){
   var sel=document.getElementById('mis-mgrf');
   sel.value='__none__';
